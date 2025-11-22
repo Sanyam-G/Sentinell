@@ -24,22 +24,17 @@ class ContainerObserver:
     """Monitors Docker containers and their logs/events."""
 
     def __init__(self):
-        # Connect to Docker using the mounted socket
-        # Use APIClient directly for better control
-        docker_socket = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
-
+        # Connect to Docker using from_env() which automatically handles socket detection
         try:
-            # Create client with explicit socket path
-            self.client = docker.DockerClient(
-                base_url=docker_socket,
-                version='auto'
-            )
+            # Use from_env() - it automatically detects the Docker socket
+            # and uses the proper adapter for Unix sockets
+            self.client = docker.from_env()
+
             # Test connection
             info = self.client.info()
             logger.info(f"✓ Connected to Docker daemon (version: {info.get('ServerVersion', 'unknown')})")
         except Exception as e:
             logger.error(f"Failed to connect to Docker daemon: {e}")
-            logger.error(f"Tried socket: {docker_socket}")
             raise
 
         self.log_queues: Dict[str, asyncio.Queue] = {}

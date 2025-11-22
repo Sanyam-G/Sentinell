@@ -96,7 +96,7 @@ services:
     networks:
       - sentinell-network
 
-  # Sentinell Observer Node (The Nervous System)
+  # Sentinell Observer Node (The Nervous System + The Brain)
   sentinell-observer:
     build:
       context: ./sentinell-backend
@@ -104,11 +104,15 @@ services:
     container_name: sentinell-observer
     environment:
       - PYTHONUNBUFFERED=1
+      # Phase 3: Agent requires Anthropic API key (Claude Haiku 3)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     ports:
       - "8001:8001"
     volumes:
       # Mount Docker socket to monitor containers
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount docs directory for RAG
+      - ./sentinell-backend/docs:/app/docs:ro
     networks:
       - sentinell-network
     restart: unless-stopped

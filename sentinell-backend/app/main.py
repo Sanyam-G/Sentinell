@@ -2,18 +2,21 @@
 Sentinell Backend - Observer Node API
 
 Exposes WebSocket endpoints for real-time log/event streaming.
+Phase 3: Agent integration with POST /analyze endpoint.
 """
 import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Set
+from typing import Set, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from .observer import ContainerObserver
+from .agent import SentinellAgent
 
 # Configure logging
 logging.basicConfig(
@@ -22,19 +25,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global observer instance
+# Global instances
 observer: ContainerObserver = None
+agent: Optional[SentinellAgent] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    global observer
+    global observer, agent
 
     # Startup
     logger.info("🚀 Starting Sentinell Observer Node...")
     observer = ContainerObserver()
     await observer.start()
+
+    # Initialize Agent (Phase 3)
+    try:
+        logger.info("🧠 Initializing Sentinell Agent...")
+        agent = SentinellAgent()
+        logger.info("✅ Agent ready")
+    except Exception as e:
+        logger.warning(f"⚠️ Agent initialization failed: {e}")
+        logger.warning("Agent endpoints will not be available")
+        agent = None
 
     yield
 
@@ -231,6 +245,119 @@ async def report_anomaly(anomaly: dict):
         await observer.event_queue.put(anomaly_event)
 
     return {"status": "received", "anomaly": anomaly_event}
+
+
+# ==================== PHASE 3: AGENT ENDPOINTS ====================
+
+class AnalyzeRequest(BaseModel):
+    """Request model for /analyze endpoint."""
+    problem_description: str
+    container_name: str
+
+
+class ApprovalRequest(BaseModel):
+    """Request model for /approve endpoint."""
+    approved: bool
+    feedback: str = ""
+    state: dict  # The agent state from the previous analysis
+
+
+@app.post("/analyze")
+async def analyze_problem(request: AnalyzeRequest):
+    """
+    Analyze a problem using the Sentinell Agent.
+
+    This endpoint:
+    1. Detects the issue from logs
+    2. Retrieves relevant documentation
+    3. Creates a fix plan
+    4. Returns the plan for human approval
+
+    Returns the agent state at the human_approval node.
+    """
+    if not agent:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent not available. Check ANTHROPIC_API_KEY environment variable."
+        )
+
+    logger.info(f"🔍 Analysis requested for {request.container_name}: {request.problem_description}")
+
+    try:
+        # Run agent analysis (stops at human_approval)
+        state = agent.analyze(
+            problem_description=request.problem_description,
+            container_name=request.container_name
+        )
+
+        # Return state for human review
+        return {
+            "status": "awaiting_approval",
+            "container": request.container_name,
+            "problem": request.problem_description,
+            "detected_issue": state.get("detected_issue", ""),
+            "diagnosis": state.get("diagnosis", ""),
+            "proposed_fix": state.get("proposed_fix", ""),
+            "fix_steps": state.get("fix_steps", []),
+            "current_step": state.get("current_step", ""),
+            "error": state.get("error", ""),
+            "state": state  # Include full state for continuation
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/approve")
+async def approve_fix(request: ApprovalRequest):
+    """
+    Approve or reject the agent's proposed fix.
+
+    If approved:
+    1. Agent applies the fix
+    2. Agent verifies the fix worked
+    3. Returns final result
+
+    If rejected:
+    1. Returns without executing
+    """
+    if not agent:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent not available"
+        )
+
+    logger.info(f"👤 Human decision: {'APPROVED' if request.approved else 'REJECTED'}")
+
+    try:
+        # Continue agent execution with approval decision
+        final_state = agent.approve_and_execute(
+            state=request.state,
+            approved=request.approved,
+            feedback=request.feedback
+        )
+
+        if not request.approved:
+            return {
+                "status": "rejected",
+                "message": "Fix rejected by human",
+                "feedback": request.feedback
+            }
+
+        # Return execution results
+        return {
+            "status": "completed",
+            "fix_applied": final_state.get("fix_applied", False),
+            "execution_log": final_state.get("execution_log", []),
+            "verification": final_state.get("verification_result", ""),
+            "issue_resolved": final_state.get("issue_resolved", False),
+            "error": final_state.get("error", "")
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Approval processing failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

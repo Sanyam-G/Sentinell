@@ -12,7 +12,9 @@
       "Bash(git push:*)",
       "Bash(docker-compose logs:*)",
       "Bash(docker exec:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)"
     ],
     "deny": [],
     "ask": []
