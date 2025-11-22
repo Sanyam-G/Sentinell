@@ -96,6 +96,23 @@ services:
     networks:
       - sentinell-network
 
+  # Sentinell Observer Node (The Nervous System)
+  sentinell-observer:
+    build:
+      context: ./sentinell-backend
+      dockerfile: Dockerfile
+    container_name: sentinell-observer
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8001:8001"
+    volumes:
+      # Mount Docker socket to monitor containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - sentinell-network
+    restart: unless-stopped
+
 networks:
   sentinell-network:
     driver: bridge
