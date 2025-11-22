@@ -17,16 +17,16 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Set your OpenAI API key in `.env`:
+Set your Anthropic API key in `.env`:
 
 ```bash
-OPENAI_API_KEY=your-key-here
+ANTHROPIC_API_KEY=your-key-here
 ```
 
 Or export it:
 
 ```bash
-export OPENAI_API_KEY=your-key-here
+export ANTHROPIC_API_KEY=your-key-here
 ```
 
 ## Usage
@@ -75,11 +75,13 @@ observe → reason → act → evaluate
 
 - **state.py**: Defines the `SREState` that tracks logs, issues, actions, and resolution status
 - **nodes/observe.py**: Observes incoming signals (currently stubbed with sample error log)
-- **nodes/reason.py**: Uses LLM to analyze logs and determine root cause + next action
+- **nodes/reason.py**: Uses Claude to analyze logs and determine root cause + next action
 - **nodes/act.py**: Executes the proposed action (currently just prints it)
-- **nodes/evaluate.py**: Uses LLM to determine if the issue is resolved
+- **nodes/evaluate.py**: Uses Claude to determine if the issue is resolved
 - **graph.py**: Builds the LangGraph state machine with conditional looping
 - **app.py**: FastAPI server with WebSocket streaming + CLI runner
+
+The agent uses **Claude Sonnet 4** (`claude-sonnet-4-20250514`) via Anthropic's API for reasoning and evaluation.
 
 ## Extending the Agent
 
