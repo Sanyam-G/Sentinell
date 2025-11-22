@@ -1,4 +1,8 @@
+import { useState } from 'react';
 import { Incident, AgentStep } from '../types';
+import StepDetailModal from './StepDetailModal';
+import Sparkline from './Sparkline';
+import { mockMetrics } from '../data/mockData';
 
 interface IncidentConsoleProps {
   incident: Incident;
@@ -8,93 +12,155 @@ interface IncidentConsoleProps {
 }
 
 export default function IncidentConsole({ incident, steps, onStart, isRunning }: IncidentConsoleProps) {
+  const [selectedStep, setSelectedStep] = useState<AgentStep | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const remediationPlan = `Remediation Plan for Worker-17 CPU Spike
+
+1. Implement exponential backoff in queue processing loop
+2. Add circuit breaker pattern to prevent cascading failures
+3. Increase worker pool size temporarily to handle backlog
+4. Add monitoring alerts for queue depth thresholds`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(remediationPlan);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-8 max-w-4xl">
       {/* Incident Header */}
-      <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/30 rounded-lg p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-1 text-xs font-semibold rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                ACTIVE
-              </span>
-              <span className="text-gray-400 text-sm">
-                {new Date(incident.timestamp).toLocaleTimeString()}
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse"></div>
+              <span className="text-xs text-slate-500 uppercase tracking-wide">
+                Active Incident
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">{incident.title}</h2>
-            <p className="text-gray-300">{incident.description}</p>
+            <h2 className="text-3xl font-light text-white">{incident.title}</h2>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">{incident.description}</p>
           </div>
-          <button
-            onClick={onStart}
-            disabled={isRunning}
-            className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all"
-          >
-            {isRunning ? 'Running...' : 'Ask Agent'}
-          </button>
+        </div>
+
+        {/* Metrics Sparklines */}
+        <div className="flex gap-6 pt-4">
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-xs text-slate-500">CPU</div>
+              <div className="text-lg font-medium text-red-400">95%</div>
+            </div>
+            <Sparkline data={mockMetrics.cpu} color="#f87171" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-xs text-slate-500">Memory</div>
+              <div className="text-lg font-medium text-yellow-400">68%</div>
+            </div>
+            <Sparkline data={mockMetrics.memory} color="#fbbf24" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-xs text-slate-500">Latency</div>
+              <div className="text-lg font-medium text-orange-400">490ms</div>
+            </div>
+            <Sparkline data={mockMetrics.latency} color="#fb923c" />
+          </div>
         </div>
       </div>
 
       {/* Agent Steps Timeline */}
-      <div>
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-cyan-400"></span>
-          Investigation Timeline
-        </h3>
-        <div className="space-y-3">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              className="bg-slate-800/50 border border-cyan-500/20 rounded-lg p-4 hover:border-cyan-500/40 transition-all cursor-pointer group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 mt-1">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step.status === 'completed' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                    step.status === 'in_progress' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 animate-pulse' :
-                    step.status === 'failed' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                    'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-                  }`}>
-                    {step.status === 'completed' ? '✓' : index + 1}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-white">{step.title}</h4>
-                    <span className="text-xs text-gray-400">
-                      {new Date(step.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400 mb-2">{step.description}</p>
-                  {step.details && (
-                    <div className="text-sm text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded px-3 py-2 group-hover:bg-cyan-500/20 transition-all">
-                      {step.details}
-                    </div>
-                  )}
+      <div className="space-y-1">
+        {steps.map((step, index) => (
+          <div
+            key={step.id}
+            className="group py-4 border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors -mx-4 px-4"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                  step.status === 'completed' ? 'bg-green-500/10 text-green-400' :
+                  step.status === 'in_progress' ? 'bg-cyan-500/10 text-cyan-400' :
+                  'bg-slate-500/10 text-slate-500'
+                }`}>
+                  {step.status === 'completed' ? '✓' : index + 1}
                 </div>
               </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex items-center gap-3">
+                  <h4 className="font-medium text-white text-sm">{step.title}</h4>
+                  <span className="text-xs text-slate-600">
+                    {new Date(step.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500 leading-relaxed">{step.description}</p>
+                {step.details && (
+                  <button
+                    onClick={() => setSelectedStep(step)}
+                    className="text-xs text-cyan-400/80 mt-2 hover:text-cyan-400 transition-colors cursor-pointer text-left"
+                  >
+                    → {step.details}
+                  </button>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* Final Output */}
       {steps.some(s => s.status === 'in_progress') && (
-        <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-            <span className="animate-pulse">●</span>
-            Remediation Plan
-          </h3>
-          <div className="space-y-2 text-gray-300">
-            <p className="font-semibold text-white">Recommended Actions:</p>
-            <ol className="list-decimal list-inside space-y-1 text-sm">
-              <li>Implement exponential backoff in queue processing loop</li>
-              <li>Add circuit breaker pattern to prevent cascading failures</li>
-              <li>Increase worker pool size temporarily to handle backlog</li>
-              <li>Add monitoring alerts for queue depth thresholds</li>
-            </ol>
+        <div className="mt-8 pt-8 border-t border-slate-800">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
+              <span className="text-xs text-slate-500 uppercase tracking-wide">
+                Remediation Plan
+              </span>
+              <button
+                onClick={copyToClipboard}
+                className="p-1 rounded hover:bg-cyan-500/10 text-cyan-400/60 hover:text-cyan-400 transition-colors"
+                title={copied ? 'Copied!' : 'Copy to clipboard'}
+              >
+                {copied ? (
+                  <span className="text-xs">✓</span>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex gap-3">
+                <span className="text-slate-600">1.</span>
+                <p className="text-slate-300">Implement exponential backoff in queue processing loop</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-slate-600">2.</span>
+                <p className="text-slate-300">Add circuit breaker pattern to prevent cascading failures</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-slate-600">3.</span>
+                <p className="text-slate-300">Increase worker pool size temporarily to handle backlog</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-slate-600">4.</span>
+                <p className="text-slate-300">Add monitoring alerts for queue depth thresholds</p>
+              </div>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedStep && (
+        <StepDetailModal
+          step={selectedStep}
+          onClose={() => setSelectedStep(null)}
+        />
       )}
     </div>
   );

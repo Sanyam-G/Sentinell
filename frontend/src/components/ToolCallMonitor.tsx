@@ -9,47 +9,26 @@ export default function ToolCallMonitor({ toolCalls }: ToolCallMonitorProps) {
   const [selectedCall, setSelectedCall] = useState<ToolCall | null>(null);
 
   return (
-    <div className="h-full flex flex-col bg-slate-900/20">
-      <div className="px-4 py-3 border-b border-cyan-500/20">
-        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-          <span className="h-1 w-1 rounded-full bg-cyan-400"></span>
-          Tool Call Monitor
-          <span className="ml-auto text-xs text-gray-400">{toolCalls.length} calls</span>
-        </h3>
-      </div>
-      <div className="flex-1 overflow-auto scrollbar-thin">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-slate-900 border-b border-cyan-500/20">
-            <tr className="text-gray-400">
-              <th className="text-left p-3 font-medium">Time</th>
-              <th className="text-left p-3 font-medium">Tool</th>
-              <th className="text-left p-3 font-medium">Duration</th>
-              <th className="text-left p-3 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {toolCalls.map((call) => (
-              <tr
-                key={call.id}
-                onClick={() => setSelectedCall(call)}
-                className="border-b border-slate-800 hover:bg-cyan-500/5 cursor-pointer transition-colors"
-              >
-                <td className="p-3 text-gray-400 text-xs">
-                  {new Date(call.timestamp).toLocaleTimeString()}
-                </td>
-                <td className="p-3">
-                  <code className="text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded text-xs">
-                    {call.toolName}
-                  </code>
-                </td>
-                <td className="p-3 text-gray-400">{call.duration}ms</td>
-                <td className="p-3">
-                  <span className="text-green-400 text-xs">✓ Success</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="h-full flex flex-col">
+      <div className="flex-1 overflow-auto scrollbar-thin p-6 space-y-3">
+        {toolCalls.map((call) => (
+          <div
+            key={call.id}
+            onClick={() => setSelectedCall(call)}
+            className="group cursor-pointer"
+          >
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-3">
+                <span className="text-green-400">✓</span>
+                <code className="text-cyan-400">{call.toolName}</code>
+              </div>
+              <div className="flex items-center gap-3 text-slate-600">
+                <span>{call.duration}ms</span>
+                <span>{new Date(call.timestamp).toLocaleTimeString()}</span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Modal for tool call details */}

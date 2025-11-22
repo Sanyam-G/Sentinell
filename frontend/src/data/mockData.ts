@@ -213,3 +213,10 @@ export const mockReasoningStream = [
   { type: 'observation', content: 'Found process_queue() function without backoff strategy' },
   { type: 'thought', content: 'This explains the CPU spike. Generating remediation plan...' },
 ];
+
+// Metrics data for sparklines (last 20 data points)
+export const mockMetrics = {
+  cpu: [45, 48, 52, 55, 58, 62, 68, 72, 78, 82, 85, 88, 90, 92, 94, 95, 96, 95, 95, 94],
+  memory: [55, 56, 57, 58, 59, 60, 61, 62, 62, 63, 63, 64, 65, 66, 67, 68, 68, 69, 68, 67],
+  latency: [120, 125, 130, 140, 150, 180, 220, 280, 320, 380, 420, 450, 480, 500, 520, 510, 505, 500, 495, 490],
+};
