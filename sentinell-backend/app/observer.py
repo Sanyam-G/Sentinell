@@ -11,6 +11,7 @@ Formats everything as structured JSON for the Agent.
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Dict, List, Optional, Set
 import docker
@@ -23,7 +24,24 @@ class ContainerObserver:
     """Monitors Docker containers and their logs/events."""
 
     def __init__(self):
-        self.client = docker.from_env()
+        # Connect to Docker using the mounted socket
+        # Use APIClient directly for better control
+        docker_socket = os.environ.get('DOCKER_HOST', 'unix:///var/run/docker.sock')
+
+        try:
+            # Create client with explicit socket path
+            self.client = docker.DockerClient(
+                base_url=docker_socket,
+                version='auto'
+            )
+            # Test connection
+            info = self.client.info()
+            logger.info(f"✓ Connected to Docker daemon (version: {info.get('ServerVersion', 'unknown')})")
+        except Exception as e:
+            logger.error(f"Failed to connect to Docker daemon: {e}")
+            logger.error(f"Tried socket: {docker_socket}")
+            raise
+
         self.log_queues: Dict[str, asyncio.Queue] = {}
         self.event_queue = asyncio.Queue()
         self.monitored_containers: Set[str] = set()

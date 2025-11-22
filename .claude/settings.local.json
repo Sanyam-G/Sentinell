@@ -7,7 +7,12 @@
       "Bash(docker-compose ps:*)",
       "Bash(curl:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add Chaos Engine and Observer Node\n\nImplemented core monitoring and chaos testing infrastructure:\n\nChaos Engine (/chaos):\n- Python CLI tool with typer for breaking victim services\n- break-config: Inject nginx config syntax errors\n- leak-memory: Memory leak simulation in containers\n- block-port: Port conflict simulation\n- restore: Fix all chaos scenarios\n- status: Check cluster health\n\nObserver Node (/sentinell-backend):\n- Real-time Docker container monitoring with Docker SDK\n- Stream logs from all victim containers\n- Monitor Docker events (die, oom, restart, kill)\n- Parse and structure logs as JSON\n- WebSocket endpoints for live streaming\n- Resource metrics (CPU, memory) collection\n- FastAPI backend with CORS support\n\nInfrastructure:\n- Updated docker-compose.yml with observer service\n- Mounted Docker socket for container monitoring\n- Added observer to sentinell network\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
