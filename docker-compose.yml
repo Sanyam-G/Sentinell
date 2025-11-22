@@ -1,0 +1,104 @@
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sentinell-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: products_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinell-network
+
+  # Product API (FastAPI)
+  product-api:
+    build:
+      context: ./victim/product-api
+      dockerfile: Dockerfile
+    container_name: sentinell-product-api
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://admin:admin123@postgres:5432/products_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinell-network
+
+  # Payment Service (Node.js)
+  payment-service:
+    build:
+      context: ./victim/payment-service
+      dockerfile: Dockerfile
+    container_name: sentinell-payment-service
+    environment:
+      - PORT=3002
+    ports:
+      - "3002:3002"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinell-network
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ./victim/frontend
+      dockerfile: Dockerfile
+    container_name: sentinell-frontend
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - product-api
+      - payment-service
+    networks:
+      - sentinell-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: sentinell-nginx
+    volumes:
+      - ./victim/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - product-api
+      - payment-service
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sentinell-network
+
+networks:
+  sentinell-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
