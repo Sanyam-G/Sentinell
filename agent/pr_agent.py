@@ -85,6 +85,17 @@ class PRAgent:
             if not branch_name:
                 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
                 branch_name = f"pr-agent-{timestamp}"
+
+                # Safety: never create a PR branch that is the same as the base branch
+                if branch_name == base_branch:
+                    return {
+                        "success": False,
+                        "error": (
+                            f"Refusing to create PR from the base branch '{base_branch}'. "
+                            "Please provide a different branch name."
+                        ),
+                        "branch_name": branch_name,
+                    }
             
             # Generate title if not provided
             if not title:
@@ -252,6 +263,17 @@ class PRAgent:
                     "success": False,
                     "error": f"Branch '{branch_name}' does not exist on remote.",
                     "branch_name": branch_name
+                }
+
+            # Safety: do not create a PR from the base branch on remote
+            if branch_name == base_branch:
+                return {
+                    "success": False,
+                    "error": (
+                        f"Refusing to create PR from the base branch '{base_branch}'. "
+                        "Provide a feature branch instead."
+                    ),
+                    "branch_name": branch_name,
                 }
             
             # Check if PR already exists
