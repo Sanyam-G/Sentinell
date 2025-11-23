@@ -95,15 +95,22 @@ async def _record_failure(
 async def _record_poll_metadata(
     session: AsyncSession, repo: models.Repo, result: RepoPollResult
 ) -> None:
-    meta = dict(repo.meta or {})
+    # Get the repo from the current session to avoid detached instance issues
+    from sqlalchemy import select
+    result_repo = await session.execute(select(models.Repo).where(models.Repo.id == repo.id))
+    attached_repo = result_repo.scalar_one_or_none()
+    
+    if not attached_repo:
+        return
+    
+    meta = dict(attached_repo.meta or {})
     meta["last_poll"] = {
         "at": result.ran_at.isoformat(),
         "success": result.success,
         "exit_code": result.exit_code,
     }
-    repo.meta = meta
-    repo.updated_at = datetime.utcnow()
-    session.add(repo)
+    attached_repo.meta = meta
+    attached_repo.updated_at = datetime.utcnow()
     await session.commit()
 
 
