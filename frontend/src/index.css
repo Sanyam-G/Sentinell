@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+}
+
+.dark {
   --background: 222 47% 4%;
   --foreground: 210 40% 98%;
   --border: 217 33% 17%;
@@ -15,6 +21,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  transition: background-color 0.3s, color 0.3s;
 }
 
 code {
@@ -29,15 +36,14 @@ code {
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    @apply bg-gray-100 dark:bg-slate-900;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
+    @apply bg-gray-300 dark:bg-slate-700 rounded;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(217 33% 25%);
+    @apply bg-gray-400 dark:bg-slate-600;
   }
 }

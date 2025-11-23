@@ -5,6 +5,7 @@ import SlackViewer from './components/SlackViewer';
 import CodeViewer from './components/CodeViewer';
 import ReasoningStream from './components/ReasoningStream';
 import LogWindowList from './components/LogWindowList';
+import { useTheme } from './contexts/ThemeContext';
 import {
   AgentStep,
   CodeFile,
@@ -32,6 +33,7 @@ const POLL_INTERVAL_MS = 5000;
 type Tab = 'reasoning' | 'signals' | 'code' | 'tools';
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>('reasoning');
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
@@ -156,10 +158,10 @@ function App() {
 
   const incidentActive = Boolean(selectedIncident && selectedIncident.status !== 'resolved');
   const severityBadgeMap: Record<IncidentSeverity, string> = {
-    low: 'border-emerald-500/40 text-emerald-300',
-    medium: 'border-amber-500/40 text-amber-300',
-    high: 'border-orange-500/40 text-orange-300',
-    critical: 'border-red-500/40 text-red-300',
+    low: 'border-emerald-200 text-emerald-600 dark:border-emerald-500/40 dark:text-emerald-300',
+    medium: 'border-amber-200 text-amber-600 dark:border-amber-500/40 dark:text-amber-300',
+    high: 'border-orange-200 text-orange-600 dark:border-orange-500/40 dark:text-orange-300',
+    critical: 'border-red-200 text-red-600 dark:border-red-500/40 dark:text-red-300',
   };
 
   const formatTimestamp = (value?: string) => (value ? new Date(value).toLocaleString() : 'Never');
@@ -172,7 +174,7 @@ function App() {
         meta: selectedIncident
           ? `Updated ${new Date(selectedIncident.updated_at).toLocaleTimeString()}`
           : 'Queue empty',
-        accent: incidentActive ? 'text-cyan-300' : 'text-slate-400',
+        accent: incidentActive ? 'text-blue-600 dark:text-cyan-300' : 'text-gray-500 dark:text-slate-400',
       },
       {
         label: 'Active Incident',
@@ -180,7 +182,7 @@ function App() {
         meta: selectedIncident
           ? `${selectedIncident.signal_type} · ${selectedIncident.severity}`
           : 'Use the form to submit an incident',
-        accent: 'text-white',
+        accent: 'text-gray-900 dark:text-white',
       },
       {
         label: 'Target Repo',
@@ -258,137 +260,142 @@ function App() {
   }, [selectedRepo, loadRepos, loadIncidents]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Animated background gradient orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-      </div>
-
-      <header className="relative border-b border-slate-800/50 backdrop-blur-xl bg-slate-950/80">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 transition-colors duration-300">
+      <header className="relative border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-950 transition-colors duration-300">
         <div className="px-8 py-4 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
                 <span className="text-white font-bold text-lg">S</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                  Sentinel Operations Console
+                <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  Sentinell Operations Console
                 </h1>
-                <p className="text-xs text-slate-500">AI-Powered SRE Agent</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">AI-Powered SRE Agent</p>
               </div>
             </div>
             <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/50 border border-slate-800/50">
-                <div className={`h-2 w-2 rounded-full ${health?.ok ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-red-400'} animate-pulse`}></div>
-                <span className={health?.ok ? 'text-green-400' : 'text-red-400'}>
+              <button
+                onClick={toggleTheme}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-slate-900 border border-gray-300 dark:border-slate-700 hover:bg-gray-200 dark:hover:bg-slate-800 transition-all duration-200"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                )}
+              </button>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-900 border border-gray-300 dark:border-slate-700 transition-colors duration-300">
+                <div className={`h-2 w-2 rounded-full ${health?.ok ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+                <span className={health?.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                   {health?.ok ? 'Backend online' : 'Backend unreachable'}
                 </span>
               </div>
-              <div className="px-3 py-1.5 rounded-lg bg-slate-900/50 border border-slate-800/50">
-                <span className="text-slate-400">Incidents: </span>
-                <span className="text-cyan-400 font-medium">{incidents.length}</span>
+              <div className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-900 border border-gray-300 dark:border-slate-700 transition-colors duration-300">
+                <span className="text-gray-600 dark:text-slate-400">Incidents: </span>
+                <span className="text-blue-600 dark:text-blue-400 font-medium">{incidents.length}</span>
               </div>
             </div>
           </div>
           {error && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2">
-              <p className="text-xs text-red-400">{error}</p>
+            <div className="rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 px-4 py-3">
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {statusCards.map((card, idx) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {statusCards.map((card) => (
               <div
                 key={card.label}
-                className="group rounded-xl border border-slate-800/50 bg-gradient-to-br from-slate-900/60 to-slate-900/30 backdrop-blur-sm p-4 hover:border-cyan-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/5"
-                style={{animationDelay: `${idx * 100}ms`}}
+                className="rounded-xl border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-200"
               >
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">{card.label}</p>
-                <p className={`mt-1.5 text-base font-semibold ${card.accent ?? 'text-white'} group-hover:scale-105 transition-transform`}>
+                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400 font-medium">{card.label}</p>
+                <p className={`mt-2 text-lg font-bold ${card.accent ?? 'text-gray-900 dark:text-white'}`}>
                   {card.value}
                 </p>
-                <p className="text-[11px] text-slate-500 mt-1">{card.meta}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5">{card.meta}</p>
               </div>
             ))}
           </div>
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-100px)] relative">
-        <aside className="w-80 border-r border-slate-800/50 bg-slate-950/80 backdrop-blur-xl flex flex-col relative">
-          <div className="px-4 py-3 border-b border-slate-800/50 text-xs flex justify-between items-center bg-gradient-to-r from-slate-900/50 to-transparent">
-            <span className="font-semibold text-slate-300 uppercase tracking-wide">Incidents</span>
+      <div className="flex h-[calc(100vh-180px)] relative">
+        <aside className="w-80 border-r border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col relative transition-colors duration-300">
+          <div className="px-4 py-4 border-b border-gray-300 dark:border-slate-700 text-sm flex justify-between items-center">
+            <span className="font-bold text-gray-900 dark:text-white">Incidents</span>
             {loadingIncidents && (
               <div className="flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-cyan-400 animate-ping"></div>
-                <span className="text-slate-500">Refreshing…</span>
+                <div className="h-2 w-2 rounded-full bg-blue-500 animate-ping"></div>
+                <span className="text-gray-500 dark:text-slate-500 text-xs">Refreshing…</span>
               </div>
             )}
           </div>
           <div className="flex-1 overflow-auto">
             {incidents.length === 0 && (
-              <div className="p-4 text-xs text-slate-500">
+              <div className="p-4 text-sm text-gray-500 dark:text-slate-500">
                 No incidents yet. Submit one below to kick off the agent loop.
               </div>
             )}
-            <div className="divide-y divide-slate-900">
+            <div className="divide-y divide-gray-200 dark:divide-slate-800">
               {incidents.map((incident) => {
                 const repoLabel = incident.repo_id
                   ? repoLookup.get(incident.repo_id)?.name ?? 'Unknown repo'
                   : 'Unassigned';
-                const severityClass = severityBadgeMap[incident.severity] ?? 'border-slate-700 text-slate-400';
+                const severityClass = severityBadgeMap[incident.severity] ?? 'border-gray-300 dark:border-slate-700 text-gray-600 dark:text-slate-400';
                 const statusTint =
                   incident.status === 'resolved'
-                    ? 'text-green-400'
+                    ? 'text-green-600 dark:text-green-400'
                     : incident.status === 'processing'
-                      ? 'text-amber-400'
-                      : 'text-slate-400';
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-gray-500 dark:text-slate-400';
                 return (
                   <button
                     key={incident.id}
                     onClick={() => setSelectedIncidentId(incident.id)}
                     className={`w-full text-left px-4 py-3 transition-all duration-200 relative group ${
                       incident.id === selectedIncidentId 
-                        ? 'bg-gradient-to-r from-cyan-500/10 to-transparent border-l-2 border-cyan-400 shadow-lg shadow-cyan-500/5' 
-                        : 'hover:bg-slate-900/40'
+                        ? 'bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-600 dark:border-blue-500' 
+                        : 'hover:bg-gray-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm line-clamp-2 font-medium ${incident.id === selectedIncidentId ? 'text-white' : 'text-slate-300'}`}>
+                      <p className={`text-sm line-clamp-2 font-semibold ${incident.id === selectedIncidentId ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-slate-300'}`}>
                         {incident.title}
                       </p>
                       <span
-                        className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border ${severityClass} shadow-sm`}
+                        className={`text-[10px] uppercase tracking-wide px-2 py-1 rounded-md border ${severityClass} font-medium`}
                       >
                         {incident.severity}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1.5">
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-500 mt-2">
                       <span>
                         {new Date(incident.created_at).toLocaleTimeString()} · {incident.signal_type}
                       </span>
-                      <span className={`uppercase text-[10px] font-semibold ${statusTint}`}>{incident.status}</span>
+                      <span className={`uppercase text-[10px] font-bold ${statusTint}`}>{incident.status}</span>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-1">
-                      Repo: <span className="text-slate-300 font-medium">{repoLabel}</span>
+                    <div className="text-xs text-gray-500 dark:text-slate-500 mt-1.5">
+                      Repo: <span className="text-gray-700 dark:text-slate-300 font-semibold">{repoLabel}</span>
                     </div>
-                    {incident.id === selectedIncidentId && (
-                      <div className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-transparent via-cyan-400 to-transparent"></div>
-                    )}
                   </button>
                 );
               })}
             </div>
           </div>
-          <form onSubmit={handleIssueSubmit} className="border-t border-slate-800/50 p-4 space-y-3 bg-gradient-to-t from-slate-900/50 to-transparent">
-            <div className="flex items-center justify-between text-xs uppercase tracking-wide">
-              <p className="font-semibold text-cyan-400">Report Issue</p>
+          <form onSubmit={handleIssueSubmit} className="border-t border-gray-300 dark:border-slate-700 p-4 space-y-3 bg-gray-50 dark:bg-slate-800 transition-colors duration-300">
+            <div className="flex items-center justify-between text-sm">
+              <p className="font-bold text-gray-900 dark:text-white">Report Issue</p>
               {issueSuccess && (
-                <span className="text-[10px] text-green-400 animate-pulse">{issueSuccess}</span>
+                <span className="text-xs text-green-600 dark:text-green-400 animate-pulse">{issueSuccess}</span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-gray-600 dark:text-slate-400 leading-relaxed">
               Describe a reliability task and the agent will immediately begin collecting context and drafting a fix.
             </p>
             <input
@@ -397,7 +404,7 @@ function App() {
               value={issueForm.title}
               onChange={handleInputChange}
               placeholder="Title"
-              className="w-full bg-slate-900/50 backdrop-blur-sm text-white text-xs px-3 py-2.5 rounded-lg border border-slate-700/50 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all"
+              className="w-full bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
             />
             <textarea
               name="description"
@@ -405,16 +412,16 @@ function App() {
               onChange={handleInputChange}
               placeholder="Describe the incident"
               rows={3}
-              className="w-full bg-slate-900/50 backdrop-blur-sm text-white text-xs px-3 py-2.5 rounded-lg border border-slate-700/50 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all resize-none"
+              className="w-full bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
             />
-            <label className="block text-[11px] text-slate-400">
+            <label className="block text-xs text-gray-600 dark:text-slate-400 font-medium">
               Target repository
               <select
                 name="repo_id"
                 value={issueForm.repo_id}
                 onChange={handleInputChange}
                 disabled={loadingRepos || repos.length === 0}
-                className="mt-1.5 w-full bg-slate-900/50 backdrop-blur-sm text-white text-xs px-3 py-2.5 rounded-lg border border-slate-700/50 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all disabled:opacity-60"
+                className="mt-2 w-full bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all disabled:opacity-60"
               >
                 {repos.length === 0 && <option value="">No repos registered</option>}
                 {repos.length > 0 &&
@@ -429,7 +436,7 @@ function App() {
               name="severity"
               value={issueForm.severity}
               onChange={handleInputChange}
-              className="w-full bg-slate-900/50 backdrop-blur-sm text-white text-xs px-3 py-2.5 rounded-lg border border-slate-700/50 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 outline-none transition-all"
+              className="w-full bg-white dark:bg-slate-900 text-gray-900 dark:text-white text-sm px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
             >
               {['low', 'medium', 'high', 'critical'].map((level) => (
                 <option key={level} value={level}>
@@ -440,11 +447,11 @@ function App() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 text-xs font-semibold py-2.5 rounded-lg border border-cyan-500/40 hover:from-cyan-500/30 hover:to-blue-500/30 hover:shadow-lg hover:shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {isSubmitting ? 'Submitting…' : 'Create Incident'}
             </button>
-            <p className="text-[10px] text-slate-500 leading-relaxed">
+            <p className="text-xs text-gray-500 dark:text-slate-500 leading-relaxed">
               💡 Tip: leave repo blank for general tasks or select a repo to give the SRE immediate clone + test access.
             </p>
           </form>
@@ -464,8 +471,8 @@ function App() {
             </div>
           </div>
 
-          <div className="w-[500px] border-l border-slate-800/50 flex flex-col bg-slate-950/40 backdrop-blur-xl">
-            <div className="flex border-b border-slate-800/50 bg-gradient-to-r from-slate-900/60 to-slate-900/40">
+          <div className="w-[500px] border-l border-gray-300 dark:border-slate-700 flex flex-col bg-white dark:bg-slate-900 transition-colors duration-300">
+            <div className="flex border-b border-gray-300 dark:border-slate-700">
               <TabButton label="Reasoning" active={activeTab === 'reasoning'} onClick={() => setActiveTab('reasoning')} />
               <TabButton label="Signals" active={activeTab === 'signals'} onClick={() => setActiveTab('signals')} />
               <TabButton label="Code" active={activeTab === 'code'} onClick={() => setActiveTab('code')} />
@@ -481,13 +488,13 @@ function App() {
               {activeTab === 'signals' && (
                 <div className="h-full overflow-auto scrollbar-thin p-6 space-y-6">
                   <section>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Slack threads</p>
-                    <div className="border border-slate-800 rounded-xl bg-slate-900/40 p-4">
+                    <p className="text-xs text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">Slack threads</p>
+                    <div className="border border-gray-300 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-800 p-4">
                       <SlackViewer messages={slackMessages} />
                     </div>
                   </section>
                   <section>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Log excerpts</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">Log excerpts</p>
                     <LogWindowList windows={context?.log_windows ?? []} />
                   </section>
                 </div>
@@ -524,15 +531,15 @@ function TabButton({ label, active, onClick }: TabButtonProps) {
       onClick={onClick}
       className={`relative px-6 py-3 text-sm font-semibold transition-all duration-300 ${
         active 
-          ? 'text-cyan-400' 
-          : 'text-slate-400 hover:text-slate-200'
+          ? 'text-blue-600 dark:text-blue-400' 
+          : 'text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200'
       }`}
     >
       {label}
       {active && (
         <>
-          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/50"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-500"></div>
+          <div className="absolute inset-0 bg-blue-50 dark:bg-blue-500/5"></div>
         </>
       )}
     </button>
@@ -766,50 +773,47 @@ interface RepoInsightsPanelProps {
 function RepoInsightsPanel({ repo, lastPoll, autoPollEnabled, onPollRepo, isPolling }: RepoInsightsPanelProps) {
   return (
     <div className="px-8 pb-10">
-      <div className="rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-slate-900/60 backdrop-blur-xl p-6 space-y-6 shadow-2xl hover:border-slate-600/50 transition-all duration-300">
+      <div className="rounded-2xl border border-gray-200 dark:border-slate-700/50 bg-white dark:bg-slate-900/60 p-6 space-y-6 shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="h-2 w-2 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
-              <p className="text-xs uppercase tracking-wider font-bold text-cyan-400">Repository health</p>
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+              <p className="text-sm uppercase tracking-wider font-bold text-gray-900 dark:text-white">Repository health</p>
             </div>
-            <p className="text-sm text-slate-400">Live status for the repo tied to this incident.</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400">Live status for the repo tied to this incident.</p>
           </div>
           <button
             type="button"
             onClick={onPollRepo}
             disabled={!repo || !onPollRepo || isPolling}
-            className="relative text-xs px-5 py-2.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/40 text-cyan-300 font-semibold hover:from-cyan-500/30 hover:to-blue-500/30 hover:shadow-lg hover:shadow-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 overflow-hidden group"
+            className="relative text-sm px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            {isPolling && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent animate-shimmer"></div>
-            )}
             <span className="relative z-10">{isPolling ? 'Running checks…' : 'Run repo checks'}</span>
           </button>
         </div>
         {repo ? (
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-[11px] text-slate-500 uppercase">Repository</p>
-              <p className="text-white text-sm font-medium">{repo.name}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-500 uppercase font-medium">Repository</p>
+              <p className="text-gray-900 dark:text-white text-sm font-semibold mt-1">{repo.name}</p>
               <a
                 href={repo.repo_url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-cyan-400 hover:text-cyan-200"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               >
                 {repo.repo_url}
               </a>
             </div>
             <div>
-              <p className="text-[11px] text-slate-500 uppercase">Default branch</p>
-              <p className="text-sm text-white font-medium">{repo.default_branch}</p>
-              <p className="text-[11px] text-slate-500">Used for PR generation</p>
+              <p className="text-xs text-gray-500 dark:text-slate-500 uppercase font-medium">Default branch</p>
+              <p className="text-sm text-gray-900 dark:text-white font-semibold mt-1">{repo.default_branch}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-500">Used for PR generation</p>
             </div>
             <div>
-              <p className="text-[11px] text-slate-500 uppercase">Last poll</p>
-              <p className="text-sm text-white font-medium">{lastPoll ? new Date(lastPoll.at).toLocaleString() : 'Never'}</p>
-              <p className={`text-[11px] ${lastPoll?.success ? 'text-green-400' : 'text-red-400'}`}>
+              <p className="text-xs text-gray-500 dark:text-slate-500 uppercase font-medium">Last poll</p>
+              <p className="text-sm text-gray-900 dark:text-white font-semibold mt-1">{lastPoll ? new Date(lastPoll.at).toLocaleString() : 'Never'}</p>
+              <p className={`text-xs ${lastPoll?.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {lastPoll
                   ? lastPoll.success
                     ? 'Health checks passing'
@@ -818,17 +822,17 @@ function RepoInsightsPanel({ repo, lastPoll, autoPollEnabled, onPollRepo, isPoll
               </p>
             </div>
             <div>
-              <p className="text-[11px] text-slate-500 uppercase">Auto polling</p>
-              <p className={`text-sm font-medium ${autoPollEnabled ? 'text-green-400' : 'text-slate-400'}`}>
+              <p className="text-xs text-gray-500 dark:text-slate-500 uppercase font-medium">Auto polling</p>
+              <p className={`text-sm font-semibold mt-1 ${autoPollEnabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
                 {autoPollEnabled ? 'Enabled' : 'Paused'}
               </p>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-gray-500 dark:text-slate-500">
                 {autoPollEnabled ? 'Runs every few minutes via backend poller' : 'Re-enable in repo metadata'}
               </p>
             </div>
           </div>
         ) : (
-          <div className="text-sm text-slate-400">
+          <div className="text-sm text-gray-600 dark:text-slate-400">
             Attach this incident to a repository to unlock git context, automated fixes, and PR creation.
           </div>
         )}
