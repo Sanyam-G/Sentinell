@@ -123,34 +123,49 @@ def process_all_issues():
             # Run agent
             final_state = graph.invoke(initial_state)
             
-            # Debug: Print state info
-            print(f"Status: {getattr(final_state, 'status', 'unknown')}")
-            if hasattr(final_state, 'error') and final_state.error:
-                print(f"Error: {final_state.error}")
-            if hasattr(final_state, 'detected_issue'):
-                print(f"Detected issue: {final_state.detected_issue}")
-            if hasattr(final_state, 'code_changes'):
-                print(f"Code changes: {len(final_state.code_changes)} file(s)")
+            # Helper to safely access state attributes (LangGraph may return dict or object)
+            def get_attr(state, attr, default=None):
+                if isinstance(state, dict):
+                    return state.get(attr, default)
+                return getattr(state, attr, default)
+            
+            # Get state values
+            status = get_attr(final_state, 'status', 'unknown')
+            error = get_attr(final_state, 'error')
+            detected_issue = get_attr(final_state, 'detected_issue')
+            code_changes = get_attr(final_state, 'code_changes', {})
+            pr_created = get_attr(final_state, 'pr_created', False)
+            pr_url = get_attr(final_state, 'pr_url')
+            pr_branch = get_attr(final_state, 'pr_branch')
+            
+            # Debug output
+            print(f"Status: {status}")
+            if error:
+                print(f"Error: {error}")
+            if detected_issue:
+                print(f"Detected issue: {detected_issue[:100]}...")
+            if code_changes:
+                print(f"Code changes: {len(code_changes)} file(s)")
             
             # Check results
-            if hasattr(final_state, 'pr_created') and final_state.pr_created:
+            if pr_created:
                 results.append({
                     'issue': issue['text'][:100],
                     'success': True,
-                    'pr_url': final_state.pr_url if hasattr(final_state, 'pr_url') else None,
-                    'branch': final_state.pr_branch if hasattr(final_state, 'pr_branch') else None
+                    'pr_url': pr_url,
+                    'branch': pr_branch
                 })
-                print(f"✅ PR created: {final_state.pr_url if hasattr(final_state, 'pr_url') else 'N/A'}")
+                print(f"✅ PR created: {pr_url or 'N/A'}")
             else:
                 # Get detailed error message
-                error_msg = "Unknown error"
-                if hasattr(final_state, 'error') and final_state.error:
-                    error_msg = final_state.error
-                elif hasattr(final_state, 'status'):
-                    if final_state.status == "done" and not hasattr(final_state, 'pr_created'):
-                        error_msg = f"Process completed but no PR created. Status: {final_state.status}"
-                    else:
-                        error_msg = f"Status: {final_state.status}"
+                if error:
+                    error_msg = error
+                elif status == "done" and not pr_created:
+                    error_msg = f"Process completed but no PR created. Status: {status}"
+                elif code_changes:
+                    error_msg = f"Code changes made but PR creation failed. Status: {status}"
+                else:
+                    error_msg = f"No code changes or PR created. Status: {status}"
                 
                 results.append({
                     'issue': issue['text'][:100],
@@ -162,12 +177,12 @@ def process_all_issues():
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
-            print(f"❌ Error processing issue: {e}")
-            print(f"Details: {error_details}")
+            print(f"❌ Exception processing issue: {e}")
+            print(f"Traceback:\n{error_details}")
             results.append({
                 'issue': issue['text'][:100],
                 'success': False,
-                'error': str(e)
+                'error': f"Exception: {str(e)}"
             })
     
     # Summary
