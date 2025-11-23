@@ -32,38 +32,64 @@ def run_agent(input_text: str, input_type: str = "manual"):
     graph = build_agent_graph()
     
     print("Running agent...\n")
-    final_state = graph.invoke(initial_state)
+    try:
+        final_state = graph.invoke(initial_state)
+    except Exception as e:
+        print(f"❌ Error running agent: {e}")
+        import traceback
+        traceback.print_exc()
+        return
     
     # Print results
     print("\n" + "=" * 60)
     print("Results")
     print("=" * 60)
     
-    if final_state.error:
-        print(f"❌ Error: {final_state.error}")
+    # Safely access attributes
+    def get_attr(state, attr, default=None):
+        if isinstance(state, dict):
+            return state.get(attr, default)
+        return getattr(state, attr, default)
+    
+    error = get_attr(final_state, 'error')
+    if error:
+        print(f"❌ Error: {error}")
         return
     
-    if final_state.detected_issue:
-        print(f"✅ Issue detected: {final_state.detected_issue}")
-        print(f"   Confidence: {final_state.issue_confidence}")
+    detected_issue = get_attr(final_state, 'detected_issue')
+    issue_confidence = get_attr(final_state, 'issue_confidence')
+    root_cause = get_attr(final_state, 'root_cause')
+    affected_files = get_attr(final_state, 'affected_files', [])
+    code_changes = get_attr(final_state, 'code_changes', {})
+    pr_created = get_attr(final_state, 'pr_created', False)
+    pr_branch = get_attr(final_state, 'pr_branch')
+    pr_url = get_attr(final_state, 'pr_url')
+    status = get_attr(final_state, 'status', 'unknown')
     
-    if final_state.root_cause:
-        print(f"\n🔍 Root cause: {final_state.root_cause}")
+    if detected_issue:
+        print(f"✅ Issue detected: {detected_issue}")
+        if issue_confidence:
+            print(f"   Confidence: {issue_confidence}")
     
-    if final_state.affected_files:
-        print(f"\n📁 Files to fix: {', '.join(final_state.affected_files)}")
+    if root_cause:
+        print(f"\n🔍 Root cause: {root_cause}")
     
-    if final_state.code_changes:
-        print(f"\n✏️  Code changes made to {len(final_state.code_changes)} file(s)")
+    if affected_files:
+        print(f"\n📁 Files to fix: {', '.join(affected_files)}")
     
-    if final_state.pr_created:
+    if code_changes:
+        print(f"\n✏️  Code changes made to {len(code_changes)} file(s)")
+    
+    if pr_created:
         print(f"\n🎉 Pull Request created!")
-        print(f"   Branch: {final_state.pr_branch}")
-        print(f"   URL: {final_state.pr_url}")
+        if pr_branch:
+            print(f"   Branch: {pr_branch}")
+        if pr_url:
+            print(f"   URL: {pr_url}")
     else:
-        print(f"\n⚠️  PR not created: {final_state.error or 'Unknown error'}")
+        print(f"\n⚠️  PR not created: {error or 'Unknown error'}")
     
-    print(f"\nStatus: {final_state.status}")
+    print(f"\nStatus: {status}")
 
 
 def main():
