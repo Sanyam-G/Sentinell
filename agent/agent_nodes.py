@@ -154,34 +154,35 @@ def analyze_code(state: AgentState) -> AgentState:
     
     context = "\n".join(context_parts)
     
-    prompt = f"""You are analyzing a code issue. Use the context below to identify:
-1. Which file(s) contain the bug
-2. What the root cause is
-3. What specific code changes are needed
+    prompt = f"""You are an expert code analyst tasked with identifying and fixing bugs in codebases. Your goal is to analyze the reported issue and determine the exact code changes needed to fix it.
 
-Issue: {state.detected_issue}
+Issue Report: {state.detected_issue}
 
-Context from codebase (commits, logs):
+Context from codebase (commits, logs, and related code):
 {context}
 
-Based on the commits above, identify:
-- The file(s) that need to be changed (look for "diff --git a/file.py" patterns)
-- The exact code that needs to be fixed (look for the bug in the diff)
-- The fix to apply
+Your task:
+1. Carefully analyze the issue description and the provided context
+2. Identify which file(s) contain the bug by examining commit diffs (look for "diff --git a/file.py" patterns)
+3. Determine the root cause of the issue by understanding the logic flow and identifying where the code deviates from expected behavior
+4. Determine the exact code fix needed - identify the problematic code snippet and what it should be changed to
 
-IMPORTANT: Look for bugs in the commit diffs. For example, if you see:
-- `total += t.amount` when it should be `total -= t.amount` for withdrawals
-- Sign errors, logic errors, etc.
+Analysis Guidelines:
+- Examine commit diffs carefully to understand recent changes that may have introduced the bug
+- Look at log messages to understand the symptoms and error patterns
+- Consider the business logic and expected behavior when identifying the root cause
+- Identify the minimal, precise code change needed to fix the issue
+- Ensure the fix addresses the root cause, not just the symptoms
 
-Respond with ONLY JSON:
+Respond with ONLY valid JSON (no markdown, no code blocks):
 {{
-    "root_cause": "explanation of the bug",
-    "affected_files": ["file1.py"],
-    "fix_description": "what needs to be changed",
+    "root_cause": "detailed explanation of why the bug exists and what causes it",
+    "affected_files": ["list of file paths that need to be modified"],
+    "fix_description": "clear description of what needs to be changed and why",
     "code_fix": {{
-        "file_path": "account.py",
-        "old_code": "total += t.amount",
-        "new_code": "total -= t.amount"
+        "file_path": "relative path to the file from repository root",
+        "old_code": "exact code snippet that contains the bug (include enough context for unique identification)",
+        "new_code": "exact code snippet with the fix applied"
     }}
 }}"""
 
