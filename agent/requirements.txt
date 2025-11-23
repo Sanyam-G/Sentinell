@@ -6,4 +6,5 @@ langgraph==1.0.3
 openai==2.8.1
 pinecone-client==5.0.1
 pydantic==2.12.4
+numpy==1.26.4
 
