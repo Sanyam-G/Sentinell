@@ -123,6 +123,15 @@ def process_all_issues():
             # Run agent
             final_state = graph.invoke(initial_state)
             
+            # Debug: Print state info
+            print(f"Status: {getattr(final_state, 'status', 'unknown')}")
+            if hasattr(final_state, 'error') and final_state.error:
+                print(f"Error: {final_state.error}")
+            if hasattr(final_state, 'detected_issue'):
+                print(f"Detected issue: {final_state.detected_issue}")
+            if hasattr(final_state, 'code_changes'):
+                print(f"Code changes: {len(final_state.code_changes)} file(s)")
+            
             # Check results
             if hasattr(final_state, 'pr_created') and final_state.pr_created:
                 results.append({
@@ -133,16 +142,28 @@ def process_all_issues():
                 })
                 print(f"✅ PR created: {final_state.pr_url if hasattr(final_state, 'pr_url') else 'N/A'}")
             else:
-                error = getattr(final_state, 'error', 'Unknown error') if hasattr(final_state, 'error') else 'Unknown error'
+                # Get detailed error message
+                error_msg = "Unknown error"
+                if hasattr(final_state, 'error') and final_state.error:
+                    error_msg = final_state.error
+                elif hasattr(final_state, 'status'):
+                    if final_state.status == "done" and not hasattr(final_state, 'pr_created'):
+                        error_msg = f"Process completed but no PR created. Status: {final_state.status}"
+                    else:
+                        error_msg = f"Status: {final_state.status}"
+                
                 results.append({
                     'issue': issue['text'][:100],
                     'success': False,
-                    'error': error
+                    'error': error_msg
                 })
-                print(f"❌ Failed: {error}")
+                print(f"❌ Failed: {error_msg}")
         
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             print(f"❌ Error processing issue: {e}")
+            print(f"Details: {error_details}")
             results.append({
                 'issue': issue['text'][:100],
                 'success': False,

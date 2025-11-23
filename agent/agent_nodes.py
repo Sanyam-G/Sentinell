@@ -154,34 +154,37 @@ def analyze_code(state: AgentState) -> AgentState:
     
     context = "\n".join(context_parts)
     
-    prompt = f"""You are analyzing a code issue. Use the context below to identify:
-1. Which file(s) contain the bug
-2. What the root cause is
-3. What specific code changes are needed
+    prompt = f"""You are an expert code analyst. Analyze the issue and determine the exact code fix needed.
 
 Issue: {state.detected_issue}
 
 Context from codebase (commits, logs):
 {context}
 
-Based on the commits above, identify:
-- The file(s) that need to be changed (look for "diff --git a/file.py" patterns)
-- The exact code that needs to be fixed (look for the bug in the diff)
-- The fix to apply
+CRITICAL REQUIREMENTS:
+1. Extract the file path from commit diffs - look for "diff --git a/path/to/file.py" patterns
+2. The file_path MUST be a valid relative path (e.g., "account.py", "Madhacks-Inc/account.py")
+3. The file_path MUST NOT be "Unable to determine" or similar - you MUST find it in the context
+4. Copy the EXACT old_code from the file/diff
+5. Provide the EXACT new_code with the fix
 
-IMPORTANT: Look for bugs in the commit diffs. For example, if you see:
-- `total += t.amount` when it should be `total -= t.amount` for withdrawals
-- Sign errors, logic errors, etc.
+Your task:
+1. Find which file(s) contain the bug by examining commit diffs
+2. Determine the root cause
+3. Identify the exact code that needs to be fixed
+4. Provide the exact fix
 
-Respond with ONLY JSON:
+If you cannot find a valid file path in the context, set code_fix to an empty object {{}}.
+
+Respond with ONLY valid JSON:
 {{
-    "root_cause": "explanation of the bug",
-    "affected_files": ["file1.py"],
+    "root_cause": "detailed explanation of the bug",
+    "affected_files": ["list of file paths"],
     "fix_description": "what needs to be changed",
     "code_fix": {{
-        "file_path": "account.py",
-        "old_code": "total += t.amount",
-        "new_code": "total -= t.amount"
+        "file_path": "relative path from repo root (MUST extract from diff, e.g. 'account.py')",
+        "old_code": "exact code snippet with the bug",
+        "new_code": "exact code snippet with the fix"
     }}
 }}"""
 
@@ -203,9 +206,21 @@ Respond with ONLY JSON:
             # Store code fix with both old and new code for proper patching
             code_fix = result.get("code_fix", {})
             if code_fix:
-                file_path = code_fix.get("file_path", "")
-                old_code = code_fix.get("old_code", "")
-                new_code = code_fix.get("new_code", "")
+                file_path = code_fix.get("file_path", "").strip()
+                old_code = code_fix.get("old_code", "").strip()
+                new_code = code_fix.get("new_code", "").strip()
+                
+                # Validate file path
+                if not file_path or len(file_path) > 200 or "Unable to determine" in file_path:
+                    state.error = f"Invalid file path from analysis: {file_path}"
+                    state.status = "done"
+                    return state
+                
+                if not new_code:
+                    state.error = "No new code provided in fix"
+                    state.status = "done"
+                    return state
+                
                 if file_path and new_code:
                     # Store as dict with old and new for proper replacement
                     state.code_changes[file_path] = {
@@ -230,6 +245,13 @@ def make_code_changes(state: AgentState) -> AgentState:
         state.error = "No code changes to make"
         state.status = "done"
         return state
+    
+    # Validate code changes before proceeding
+    for file_path in list(state.code_changes.keys()):
+        if not file_path or len(file_path) > 200 or "Unable to determine" in file_path:
+            state.error = f"Invalid file path: {file_path}"
+            state.status = "done"
+            return state
     
     try:
         # Get repo root (go up from agent/ to repo root)
