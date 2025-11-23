@@ -229,3 +229,20 @@ Connect real backend
 Add websocket streaming
 
 Polish animations
+
+📡 Backend contract (updated)
+
+The FastAPI backend now exposes concrete routes the UI should call:
+
+- `GET /api/health` – quick heartbeat for status widget.
+- `GET /api/repos` / `POST /api/repos` – list + register monitored repos.
+- `GET /api/log-sources` / `POST /api/log-sources` – configure log ingestion.
+- `GET /api/slack/channels` / `POST /api/slack/channels` – map Slack channels.
+- `POST /api/issues` – form in the UI for manual incident submission.
+- `POST /api/signals/logs` – advanced panel to push custom log alerts.
+- `POST /api/signals/slack` – Slack bot relay endpoint (status page should mention URL).
+- `GET /api/incidents` – drive the incident table/timeline.
+
+When a user files an issue from the dashboard, call `/api/issues` and then show the
+new incident in the console while the worker picks it up. Poll `/api/incidents`
+or subscribe to the WebSocket to reflect status changes.

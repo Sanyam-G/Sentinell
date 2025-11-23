@@ -9,6 +9,11 @@ export default function CodeViewer({ files }: CodeViewerProps) {
   return (
     <div className="h-full flex flex-col bg-slate-900/30">
       <div className="flex-1 overflow-auto scrollbar-thin">
+        {files.length === 0 && (
+          <div className="p-6 text-xs text-slate-500">
+            No file snippets available yet. Once commits or diffs are ingested for an incident, they will render here.
+          </div>
+        )}
         {files.map((file, idx) => (
           <div key={idx}>
             <div className="px-6 py-3 bg-slate-900/50 border-b border-slate-800">

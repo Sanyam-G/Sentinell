@@ -11,6 +11,11 @@ export default function ToolCallMonitor({ toolCalls }: ToolCallMonitorProps) {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-auto scrollbar-thin p-6 space-y-3">
+        {toolCalls.length === 0 && (
+          <div className="text-xs text-slate-500">
+            The agent has not emitted any tool calls for this incident yet.
+          </div>
+        )}
         {toolCalls.map((call) => (
           <div
             key={call.id}

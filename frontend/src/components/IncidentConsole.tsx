@@ -1,32 +1,72 @@
-import { useState } from 'react';
-import { Incident, AgentStep } from '../types';
+import { useMemo, useState } from 'react';
+import { AgentStep, IncidentContextResponse, IncidentRecord } from '../types';
 import StepDetailModal from './StepDetailModal';
 import Sparkline from './Sparkline';
 import { mockMetrics } from '../data/mockData';
 
 interface IncidentConsoleProps {
-  incident: Incident;
+  incident: IncidentRecord | null;
   steps: AgentStep[];
-  onStart: () => void;
-  isRunning: boolean;
+  context?: IncidentContextResponse | null;
+  isLoading?: boolean;
 }
 
-export default function IncidentConsole({ incident, steps, onStart, isRunning }: IncidentConsoleProps) {
+export default function IncidentConsole({ incident, steps, context, isLoading }: IncidentConsoleProps) {
   const [selectedStep, setSelectedStep] = useState<AgentStep | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const remediationPlan = `Remediation Plan for Worker-17 CPU Spike
-
-1. Implement exponential backoff in queue processing loop
-2. Add circuit breaker pattern to prevent cascading failures
-3. Increase worker pool size temporarily to handle backlog
-4. Add monitoring alerts for queue depth thresholds`;
+  const remediationPlan = useMemo(() => {
+    if (!incident) {
+      return 'Select an incident to generate a remediation plan.';
+    }
+    const planLines: string[] = [
+      `Remediation Plan for ${incident.title}`,
+      '',
+      `Signal type: ${incident.signal_type.toUpperCase()} (${incident.severity})`,
+    ];
+    if (context?.log_windows?.length) {
+      planLines.push(`Inspect ${context.log_windows.length} log windows for correlated errors.`);
+    }
+    if (context?.slack_messages?.length) {
+      planLines.push(`Review ${context.slack_messages.length} Slack messages for on-call context.`);
+    }
+    if (context?.commits?.length) {
+      planLines.push(`Audit ${context.commits.length} recent commits touching affected services.`);
+    }
+    planLines.push('Validate fix via automated tests and prepare PR for review.');
+    return planLines.join('\n');
+  }, [context, incident]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(remediationPlan);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 text-slate-500 text-sm">Fetching incident context…</div>
+    );
+  }
+
+  if (!incident) {
+    return (
+      <div className="p-8 text-slate-500 text-sm">
+        No incidents yet. Submit one using the form to the left to watch the agent respond.
+      </div>
+    );
+  }
+
+  const severityColorMap: Record<string, string> = {
+    low: 'text-green-400 border-green-400/40',
+    medium: 'text-yellow-400 border-yellow-400/40',
+    high: 'text-orange-400 border-orange-400/40',
+    critical: 'text-red-400 border-red-400/40',
+  };
+  const severityColor = severityColorMap[incident.severity] ?? 'text-slate-400 border-slate-500/40';
+  const statusLabel = incident.status === 'resolved' ? 'Resolved' : incident.status === 'processing' ? 'Investigating' : 'Queued';
+  const repoName = context?.repo?.name ?? (incident.repo_id || 'Unassigned');
+  const incidentTimestamp = new Date(incident.created_at).toLocaleString();
 
   return (
     <div className="p-8 space-y-8 max-w-4xl">
@@ -35,13 +75,20 @@ export default function IncidentConsole({ incident, steps, onStart, isRunning }:
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-red-400 animate-pulse"></div>
+              <div className={`h-1.5 w-1.5 rounded-full ${incident.status === 'resolved' ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`}></div>
               <span className="text-xs text-slate-500 uppercase tracking-wide">
-                Active Incident
+                {statusLabel}
+              </span>
+              <span className={`text-[10px] uppercase tracking-wide border rounded-full px-2 py-0.5 ${severityColor}`}>
+                {incident.severity}
               </span>
             </div>
             <h2 className="text-3xl font-light text-white">{incident.title}</h2>
             <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">{incident.description}</p>
+            <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+              <span>Repo: <span className="text-slate-300">{repoName}</span></span>
+              <span>Occurred: <span className="text-slate-300">{incidentTimestamp}</span></span>
+            </div>
           </div>
         </div>
 
@@ -73,6 +120,11 @@ export default function IncidentConsole({ incident, steps, onStart, isRunning }:
 
       {/* Agent Steps Timeline */}
       <div className="space-y-1">
+        {steps.length === 0 && (
+          <div className="text-xs text-slate-500 py-6 text-center border border-dashed border-slate-800 rounded-lg">
+            Waiting for agent steps. As soon as the worker processes this incident, updates will appear here.
+          </div>
+        )}
         {steps.map((step, index) => (
           <div
             key={step.id}
@@ -111,7 +163,7 @@ export default function IncidentConsole({ incident, steps, onStart, isRunning }:
       </div>
 
       {/* Final Output */}
-      {steps.some(s => s.status === 'in_progress') && (
+      {steps.length > 0 && (
         <div className="mt-8 pt-8 border-t border-slate-800">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -133,24 +185,9 @@ export default function IncidentConsole({ incident, steps, onStart, isRunning }:
                 )}
               </button>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex gap-3">
-                <span className="text-slate-600">1.</span>
-                <p className="text-slate-300">Implement exponential backoff in queue processing loop</p>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-slate-600">2.</span>
-                <p className="text-slate-300">Add circuit breaker pattern to prevent cascading failures</p>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-slate-600">3.</span>
-                <p className="text-slate-300">Increase worker pool size temporarily to handle backlog</p>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-slate-600">4.</span>
-                <p className="text-slate-300">Add monitoring alerts for queue depth thresholds</p>
-              </div>
-            </div>
+            <pre className="bg-slate-900/60 border border-slate-800 p-4 rounded text-slate-200 text-xs whitespace-pre-wrap">
+              {remediationPlan}
+            </pre>
           </div>
         </div>
       )}
