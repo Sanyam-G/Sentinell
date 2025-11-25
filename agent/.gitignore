@@ -1,0 +1,19 @@
+# Environment variables
+.env
+
+# Test files created during testing
+test_file.txt
+example_test_file.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+

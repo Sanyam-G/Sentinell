@@ -1,0 +1,139 @@
+"""
+Batch agent that processes multiple issues and creates PRs for each.
+"""
+
+import os
+from agent_graph import build_agent_graph
+from agent_state import AgentState
+from pinecone import Pinecone
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Initialize clients
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+index = pc.Index(os.getenv("PINECONE_INDEX", "test-rag-index"))
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+def find_all_issues():
+    """Query Pinecone to find all recent errors and issues."""
+    # Query for error logs
+    error_query = "ERROR AUDIT FAILURE CRITICAL mismatch transaction balance"
+    response = openai_client.embeddings.create(
+        input=error_query,
+        model="text-embedding-3-large",
+        dimensions=1024
+    )
+    query_embedding = response.data[0].embedding
+    
+    results = index.query(
+        vector=query_embedding,
+        top_k=20,
+        include_metadata=True,
+        filter={"type": {"$in": ["log", "chat"]}}  # Only logs and Slack messages
+    )
+    
+    issues = []
+    for match in results.matches:
+        text = match.metadata.get('text', '')
+        item_type = match.metadata.get('type', '')
+        
+        # Check if it's an actual error/issue
+        if any(keyword in text.upper() for keyword in ['ERROR', 'FAILURE', 'BUG', 'ISSUE', 'PROBLEM', 'MISMATCH', 'INCREASED', 'DECREASED']):
+            issues.append({
+                'text': text,
+                'type': item_type,
+                'id': match.id,
+                'score': match.score,
+                'timestamp': match.metadata.get('timestamp', '')
+            })
+    
+    return issues
+
+
+def process_all_issues():
+    """Process all detected issues and create PRs for each."""
+    print("=" * 60)
+    print("Batch Issue Processing")
+    print("=" * 60)
+    
+    # Find all issues
+    print("\n🔍 Searching for issues in Pinecone...")
+    issues = find_all_issues()
+    print(f"Found {len(issues)} potential issues\n")
+    
+    if not issues:
+        print("No issues found!")
+        return
+    
+    # Build graph
+    graph = build_agent_graph()
+    
+    # Process each issue
+    results = []
+    for i, issue in enumerate(issues, 1):
+        print("\n" + "=" * 60)
+        print(f"Processing Issue {i}/{len(issues)}")
+        print("=" * 60)
+        print(f"Type: {issue['type']}")
+        print(f"Text: {issue['text'][:200]}...")
+        print()
+        
+        # Initialize state
+        initial_state = AgentState(
+            input_text=issue['text'],
+            input_type=issue['type']
+        )
+        
+        try:
+            # Run agent
+            final_state = graph.invoke(initial_state)
+            
+            # Check results
+            if hasattr(final_state, 'pr_created') and final_state.pr_created:
+                results.append({
+                    'issue': issue['text'][:100],
+                    'success': True,
+                    'pr_url': final_state.pr_url if hasattr(final_state, 'pr_url') else None,
+                    'branch': final_state.pr_branch if hasattr(final_state, 'pr_branch') else None
+                })
+                print(f"✅ PR created: {final_state.pr_url if hasattr(final_state, 'pr_url') else 'N/A'}")
+            else:
+                error = getattr(final_state, 'error', 'Unknown error') if hasattr(final_state, 'error') else 'Unknown error'
+                results.append({
+                    'issue': issue['text'][:100],
+                    'success': False,
+                    'error': error
+                })
+                print(f"❌ Failed: {error}")
+        
+        except Exception as e:
+            print(f"❌ Error processing issue: {e}")
+            results.append({
+                'issue': issue['text'][:100],
+                'success': False,
+                'error': str(e)
+            })
+    
+    # Summary
+    print("\n" + "=" * 60)
+    print("Summary")
+    print("=" * 60)
+    successful = sum(1 for r in results if r['success'])
+    print(f"✅ Successful: {successful}/{len(results)}")
+    print(f"❌ Failed: {len(results) - successful}/{len(results)}")
+    
+    if successful > 0:
+        print("\nCreated PRs:")
+        for r in results:
+            if r['success']:
+                print(f"  - {r['pr_url']}")
+    
+    return results
+
+
+if __name__ == "__main__":
+    process_all_issues()
+

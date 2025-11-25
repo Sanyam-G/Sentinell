@@ -1,0 +1,9 @@
+PyGithub==2.1.1
+python-dotenv==1.2.1
+langchain==1.0.8
+langchain-anthropic==1.1.0
+langgraph==1.0.3
+openai==2.8.1
+pinecone-client==5.0.1
+pydantic==2.12.4
+

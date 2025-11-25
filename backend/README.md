@@ -42,6 +42,54 @@ The server will start on `http://localhost:8000`. Frontend can connect to the We
 ws://localhost:8000/stream
 ```
 
+### REST API surface
+
+The FastAPI instance now exposes JSON endpoints under `/api` so the frontend (or
+other services) can configure integrations and submit incidents:
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/repos` | Register a repository to monitor |
+| `GET` | `/api/repos` | List configured repositories |
+| `POST` | `/api/log-sources` | Register log ingestion endpoints (Loki, CW, etc.) |
+| `POST` | `/api/slack/channels` | Map Slack channels to repos |
+| `POST` | `/api/issues` | Manual issue submission from UI |
+| `POST` | `/api/signals/logs` | Push log-based alerts into the incident queue |
+| `POST` | `/api/signals/slack` | Ingest Slack escalations (used by the Slack bot) |
+| `POST` | `/api/signals/github` | Store GitHub webhook payloads for later correlation |
+| `GET` | `/api/incidents` | Retrieve queued incidents for display |
+
+All configuration/incident data lives in the SQL database configured via
+`DATABASE_URL` (SQLite by default, Postgres in production).
+
+### Background worker
+
+Run `python worker.py` in a separate process to continuously drain queued
+incidents (submitted via the APIs above). The worker:
+
+- Clones/updates monitored repos (temporary cache in `/tmp/sentinell/repos`)
+- Hydrates LangGraph state with repo/log/Slack context
+- Generates a remediation plan and simulates execution
+- Invokes the stub `PullRequestService` so we have a hook for real GitHub PRs
+
+💡 Hook this worker up to a process manager (Supervisor, systemd, K8s cron job)
+once you connect the APIs to real signals.
+
+### Pinecone context store
+
+Signals ingested via `/api/signals/*` are now mirrored into Pinecone so the agent
+can retrieve relevant log lines, Slack messages, and commit summaries.
+
+Environment variables required:
+
+- `PINECONE_API_KEY`
+- `PINECONE_INDEX` (default `sentinell-context`)
+- `PINECONE_ENV` (default `us-east-1`)
+- `OPENAI_API_KEY` (used for embedding generation)
+
+If these are not set, the REST calls still succeed but the backend logs a warning
+and skips vector ingestion.
+
 ### Run CLI Mode
 
 ```python

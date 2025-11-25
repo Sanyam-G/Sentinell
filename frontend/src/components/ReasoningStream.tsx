@@ -1,7 +1,4 @@
-interface ReasoningStep {
-  type: 'thought' | 'action' | 'observation';
-  content: string;
-}
+import { ReasoningStep } from '../types';
 
 interface ReasoningStreamProps {
   steps: ReasoningStep[];

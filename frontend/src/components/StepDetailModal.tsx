@@ -19,7 +19,7 @@ export default function StepDetailModal({ step, onClose }: StepDetailModalProps)
                 Searched channels: #prod-alerts, #infra-debug
               </div>
               <div className="space-y-3">
-                <div className="bg-slate-900/50 border border-slate-700 rounded p-4">
+                <div className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-5 h-5 rounded bg-slate-700 flex items-center justify-center text-white text-xs">A</div>
                     <span className="text-xs text-slate-400">alert-bot</span>
@@ -72,8 +72,8 @@ export default function StepDetailModal({ step, onClose }: StepDetailModalProps)
               <div className="text-sm text-slate-400">
                 Analyzed: services/worker.py (lines 45-89)
               </div>
-              <div className="bg-slate-900/50 border border-slate-700 rounded p-4">
-                <div className="text-xs text-slate-500 mb-3">Identified Issue:</div>
+                <div className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl p-4">
+                  <div className="text-xs text-gray-500 dark:text-slate-500 mb-3">Identified Issue:</div>
                 <pre className="text-xs leading-6">
                   {codeSnippet.split('\n').map((line, idx) => (
                     <div key={idx}>
@@ -98,23 +98,23 @@ export default function StepDetailModal({ step, onClose }: StepDetailModalProps)
             <div className="space-y-4">
               <div className="space-y-3">
                 <div>
-                  <div className="text-xs text-slate-500 mb-2">Problem:</div>
-                  <p className="text-sm text-slate-300">
+                  <div className="text-xs text-gray-500 dark:text-slate-500 mb-2">Problem:</div>
+                    <p className="text-sm text-gray-700 dark:text-slate-200">
                     Queue processing loop lacks backoff strategy, causing continuous retries on failures.
                     This leads to CPU saturation when tasks repeatedly fail.
                   </p>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-500 mb-2">Evidence:</div>
-                  <ul className="text-sm text-slate-400 space-y-1">
+                  <div className="text-xs text-gray-500 dark:text-slate-500 mb-2">Evidence:</div>
+                    <ul className="text-sm text-gray-600 dark:text-slate-300 space-y-1">
                     <li>• CPU utilization: 95% sustained</li>
                     <li>• Error logs: 247 "Queue processing timeout" errors in 1 hour</li>
                     <li>• Service latency: +400ms increase</li>
                   </ul>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-500 mb-2">Impact:</div>
-                  <p className="text-sm text-slate-300">
+                  <div className="text-xs text-gray-500 dark:text-slate-500 mb-2">Impact:</div>
+                    <p className="text-sm text-gray-700 dark:text-slate-200">
                     Worker-17 is unable to process new tasks effectively, causing cascading delays
                     across the entire worker pool.
                   </p>
@@ -128,7 +128,7 @@ export default function StepDetailModal({ step, onClose }: StepDetailModalProps)
         return {
           title: step.title,
           content: (
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-gray-600 dark:text-slate-400">
               {step.details}
             </div>
           ),
@@ -140,18 +140,18 @@ export default function StepDetailModal({ step, onClose }: StepDetailModalProps)
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-slate-900 border border-slate-700 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-auto"
+        className="bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-lg font-medium text-white">{detailContent.title}</h3>
+        <div className="sticky top-0 bg-white/95 dark:bg-slate-950/95 border-b border-gray-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+          <h3 className="text-lg font-medium">{detailContent.title}</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
           >
             ✕
           </button>

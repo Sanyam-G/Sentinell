@@ -20,14 +20,16 @@ def test_state_initialization():
     """Test that the state initializes correctly"""
     print("\nTesting state initialization...")
     state = SREState()
-    assert state.logs is None
-    assert state.issue is None
-    assert state.actions == []
+    assert state.incident is None
+    assert state.log_windows == []
+    assert state.steps == []
+    assert state.plan is None
     assert state.resolved is False
     print("✓ State initialized correctly")
-    print(f"  - logs: {state.logs}")
-    print(f"  - issue: {state.issue}")
-    print(f"  - actions: {state.actions}")
+    print(f"  - incident: {state.incident}")
+    print(f"  - log windows: {state.log_windows}")
+    print(f"  - steps: {state.steps}")
+    print(f"  - plan: {state.plan}")
     print(f"  - resolved: {state.resolved}")
 
 

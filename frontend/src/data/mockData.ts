@@ -1,6 +1,14 @@
-import { AgentStep, ToolCall, SlackMessage, CodeFile, AgentState, Incident } from '../types';
+import { AgentStep, ToolCall, SlackMessage, CodeFile, AgentState } from '../types';
 
-export const mockIncident: Incident = {
+interface MockIncident {
+  id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'resolved';
+  timestamp: number;
+}
+
+export const mockIncident: MockIncident = {
   id: '1',
   title: 'CPU spike on Worker-17',
   description: 'Worker-17 experiencing 95% CPU utilization. Service latency increased by 400ms.',
